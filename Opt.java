@@ -1,6 +1,4 @@
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.*;
 import java.util.stream.Stream;
 
@@ -43,7 +41,6 @@ public sealed interface Opt<T> {
         return opts.flatMap(Opt::stream);
     }
 
-
     /**
      * Map the provided {@code Optional} to an {@code Opt} with the specified non-null value.<br>
      * <p>
@@ -61,7 +58,6 @@ public sealed interface Opt<T> {
                 .map(Opt::of)
                 .orElseGet(Opt::none);
     }
-
 
     /**
      * Returns an {@code Opt} describing the specified value, if non-null,
@@ -88,7 +84,6 @@ public sealed interface Opt<T> {
         return new None<>();
     }
 
-
     /**
      * Sequences a stream of {@code Opt} objects into an {@code Opt} containing a stream of values.
      * If any {@code Opt} in the stream is empty, returns an empty {@code Opt}.
@@ -114,6 +109,15 @@ public sealed interface Opt<T> {
     public static <T> Opt<T> flatten(Opt<Opt<T>> nested) {
         return nested.flatMap(Function.identity());
     }
+
+    /**
+     * Returns a sequential {@code Iterator} containing the value if present,
+     * otherwise an empty {@code Iterator}.
+     *
+     * @return a {@code Iterator} of the value, or empty if not present
+     * @since 1.1
+     */
+    Iterator<T> iterator();
 
     /**
      * Accepts a visitor to process this {@code Opt} instance.
@@ -479,6 +483,11 @@ public sealed interface Opt<T> {
         }
 
         @Override
+        public Iterator<T> iterator() {
+            return List.of(value).iterator();
+        }
+
+        @Override
         public <R> R accept(OptVisitor<T, R> visitor) {
             return visitor.visit(this);
         }
@@ -570,6 +579,12 @@ public sealed interface Opt<T> {
     record None<T>() implements Opt<T> {
         private static final None<?> INSTANCE = new None<>();
 
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public Iterator<T> iterator() {
+            return (Iterator<T>) List.of().iterator();
+        }
 
         @Override
         public <R> R accept(OptVisitor<T, R> visitor) {
