@@ -35,10 +35,11 @@ public sealed interface Opt<T> {
      * @param opts a stream of {@code Opt} objects
      * @param <T>  the type of the values
      * @return a stream containing all the present values
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     static <T> Stream<T> flatten(Stream<Opt<T>> opts) {
-        return opts.flatMap(Opt::stream);
+        return requireNonNull(opts, THE_VALUE_CAN_T_BE_NULL).flatMap(Opt::stream);
     }
 
     /**
@@ -93,10 +94,11 @@ public sealed interface Opt<T> {
      * @param opts a stream of {@code Opt} objects
      * @param <T>  the type of the values
      * @return an {@code Opt} containing a stream of values if all are present, otherwise empty
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     static <T> Opt<Stream<T>> sequence(Stream<Opt<T>> opts) {
-        var list = opts.toList();
+        var list = requireNonNull(opts, THE_VALUE_CAN_T_BE_NULL).toList();
         return (list.stream().allMatch(Opt::isPresent)) ? Opt.of(list.stream().map(Opt::get)) : none();
     }
 
@@ -106,10 +108,11 @@ public sealed interface Opt<T> {
      * @param nested the nested {@code Opt}
      * @param <T>    the type of the inner value
      * @return the flattened {@code Opt}
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     static <T> Opt<T> flatten(Opt<Opt<T>> nested) {
-        return nested.flatMap(Function.identity());
+        return requireNonNull(nested, THE_VALUE_CAN_T_BE_NULL).flatMap(Function.identity());
     }
 
 
@@ -128,6 +131,7 @@ public sealed interface Opt<T> {
      * @param visitor the visitor instance
      * @param <R>     the type of the result produced by the visitor
      * @return the result produced by the visitor
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     <R> R accept(OptVisitor<T, R> visitor);
@@ -138,10 +142,11 @@ public sealed interface Opt<T> {
      * @param optFn an {@code Opt} containing a function to apply
      * @param <U>   the type of the result after applying the function
      * @return an {@code Opt} containing the result, or empty if either is empty
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     default <U> Opt<U> ap(Opt<Function<? super T, ? extends U>> optFn) {
-        return (this.isPresent() && optFn.isPresent()) ? Opt.ofNullable(optFn.get().apply(this.get())) : Opt.none();
+        return (this.isPresent() && requireNonNull(optFn, THE_VALUE_CAN_T_BE_NULL).isPresent()) ? Opt.ofNullable(optFn.get().apply(this.get())) : Opt.none();
     }
 
     /**
@@ -154,10 +159,11 @@ public sealed interface Opt<T> {
      * @param <U>    the type of the other value
      * @param <R>    the type of the result
      * @return an {@code Opt} containing the combined result if both values are present, otherwise an empty {@code Opt}
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     default <U, R> Opt<R> zip(Opt<U> other, BiFunction<? super T, ? super U, ? extends R> zipper) {
-        return (this.isPresent() && other.isPresent()) ? Opt.ofNullable(zipper.apply(this.get(), other.get())) : Opt.none();
+        return (this.isPresent() && requireNonNull(other, THE_VALUE_CAN_T_BE_NULL).isPresent()) ? Opt.ofNullable(zipper.apply(this.get(), other.get())) : Opt.none();
     }
 
     /**
@@ -165,11 +171,12 @@ public sealed interface Opt<T> {
      *
      * @param action the action to be executed if no value is present
      * @return this {@code Opt}
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     default Opt<T> ifEmpty(Runnable action) {
         if (isEmpty()) {
-            action.run();
+            requireNonNull(action).run();
         }
         return this;
     }
@@ -209,10 +216,11 @@ public sealed interface Opt<T> {
      * @param <V>         the value type.
      * @return a map containing a single entry if a value is present, otherwise an empty map.
      * @throws NullPointerException if the mapping functions return {@code null}.
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     default <K, V> Map<K, V> toMap(Function<T, K> keyMapper, Function<T, V> valueMapper) {
-        return isPresent() ? Map.of(keyMapper.apply(get()), valueMapper.apply(get())) : Map.of();
+        return isPresent() ? Map.of(requireNonNull(keyMapper).apply(get()), valueMapper.apply(get())) : Map.of();
     }
 
     /**
@@ -223,10 +231,11 @@ public sealed interface Opt<T> {
      * @param <U>         the type of the transformed value.
      * @return an {@code Opt} containing the transformed value, or an empty {@code Opt} if the transformation returns {@code null}.
      * @throws NullPointerException if the transformer function is {@code null}.
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     default <U> Opt<U> transform(Function<? super Opt<T>, ? extends U> transformer) {
-        return Opt.ofNullable(transformer.apply(this));
+        return Opt.ofNullable(requireNonNull(transformer).apply(this));
     }
 
     /**
@@ -235,11 +244,12 @@ public sealed interface Opt<T> {
      *
      * @param action the action to apply if a value is present
      * @return this {@code Opt}
+     * @throws NullPointerException if input is null
      * @since 1.3
      */
     default Opt<T> andThen(Consumer<? super T> action) {
         if (isPresent()) {
-            action.accept(get());
+            requireNonNull(action).accept(get());
         }
         return this;
     }
@@ -254,10 +264,11 @@ public sealed interface Opt<T> {
      * @param <U>      the type of the result.
      * @return the result of applying either the mapper function or the fallback function.
      * @throws NullPointerException if either function is {@code null}.
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     default <U> Opt<U> flatMapOrElse(Function<? super T, Opt<U>> mapper, Supplier<Opt<U>> fallback) {
-        return isPresent() ? mapper.apply(get()) : fallback.get();
+        return isPresent() ? requireNonNull(mapper).apply(get()) : requireNonNull(fallback).get();
     }
 
 
@@ -311,6 +322,7 @@ public sealed interface Opt<T> {
      *
      * @param supplier the supplier whose result is returned if no value is present
      * @return the value if present, otherwise the result from {@code supplier}
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     T orElseGet(Supplier<? extends T> supplier);
@@ -324,10 +336,11 @@ public sealed interface Opt<T> {
      * @param mapper          the function to apply to the value if present
      * @param <U>             the type of the result
      * @return the mapped value if present, otherwise the default value
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     default <U> U mapOrElse(Supplier<? extends U> defaultSupplier, Function<? super T, ? extends U> mapper) {
-        return isPresent() ? mapper.apply(get()) : defaultSupplier.get();
+        return isPresent() ? requireNonNull(mapper).apply(get()) : requireNonNull(defaultSupplier).get();
     }
 
     /**
@@ -336,10 +349,11 @@ public sealed interface Opt<T> {
      * @param other the alternative {@code Opt} to return if this is present
      * @param <U>   the type of the value in the alternative {@code Opt}
      * @return {@code other} if a value is present, otherwise an empty {@code Opt}
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     default <U> Opt<U> and(Opt<U> other) {
-        return isPresent() ? other : Opt.none();
+        return isPresent() ? requireNonNull(other) : Opt.none();
     }
 
     /**
@@ -349,10 +363,11 @@ public sealed interface Opt<T> {
      *
      * @param other the other {@code Opt} to compare with
      * @return the exclusive value between {@code this} and {@code other}, or empty if both are present or both are empty
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     default Opt<T> xor(Opt<T> other) {
-        if (isPresent() && other.isEmpty()) {
+        if (isPresent() && requireNonNull(other).isEmpty()) {
             return this;
         } else if (isEmpty() && other.isPresent()) {
             return other;
@@ -386,10 +401,11 @@ public sealed interface Opt<T> {
      *
      * @param predicate the predicate to apply to the value
      * @return {@code true} if the value is present and matches the predicate, otherwise {@code false}
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     default boolean exists(Predicate<? super T> predicate) {
-        return isPresent() && predicate.test(get());
+        return isPresent() && requireNonNull(predicate).test(get());
     }
 
     /**
@@ -399,13 +415,14 @@ public sealed interface Opt<T> {
      * @param message the exception message to use if no value is present
      * @return the value if present
      * @throws NoSuchElementException if no value is present
+     * @throws NullPointerException   if message is null
      * @since 1.1
      */
     default T expect(String message) {
         if (isPresent()) {
             return get();
         }
-        throw new NoSuchElementException(message);
+        throw new NoSuchElementException(requireNonNull(message));
     }
 
     /**
@@ -437,6 +454,7 @@ public sealed interface Opt<T> {
      * @param mapper the function to apply to the value if present
      * @param <U>    the type of the result of the mapping
      * @return an {@code Opt} containing the result of applying the mapper, or an empty {@code Opt} if no value is present
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     <U> Opt<U> map(Function<? super T, ? extends U> mapper);
@@ -448,6 +466,7 @@ public sealed interface Opt<T> {
      * @param mapper the function to apply to the value if present
      * @param <U>    the type of the result
      * @return the result of applying the mapper, or an empty {@code Opt} if no value is present
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     <U> Opt<U> flatMap(Function<? super T, Opt<U>> mapper);
@@ -458,6 +477,7 @@ public sealed interface Opt<T> {
      *
      * @param predicate the predicate to apply to the value, if present
      * @return {@code this} if the value matches the predicate, otherwise an empty {@code Opt}
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     Opt<T> filter(Predicate<? super T> predicate);
@@ -469,10 +489,11 @@ public sealed interface Opt<T> {
      * @param predicate the predicate to test the value
      * @param fallback  the alternative {@code Opt} if predicate fails
      * @return this {@code Opt} if predicate passes, otherwise {@code fallback}
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     default Opt<T> filterOrElse(Predicate<? super T> predicate, Supplier<Opt<T>> fallback) {
-        return isPresent() && predicate.test(get()) ? this : fallback.get();
+        return isPresent() && requireNonNull(predicate).test(get()) ? this : requireNonNull(fallback).get();
     }
 
     /**
@@ -481,10 +502,11 @@ public sealed interface Opt<T> {
      * @param predicate the predicate to test the value against
      * @return this {@code Opt} if the value does not satisfy the predicate,
      * otherwise an empty {@code Opt}
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     default Opt<T> filterNot(Predicate<? super T> predicate) {
-        return filter(predicate.negate());
+        return filter(requireNonNull(predicate).negate());
     }
 
     /**
@@ -495,10 +517,11 @@ public sealed interface Opt<T> {
      * @param mapper       the mapping function to apply to the value, if present
      * @param <U>          the type of the result
      * @return the result of the mapping function if a value is present, otherwise {@code defaultValue}
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     default <U> U fold(U defaultValue, Function<? super T, ? extends U> mapper) {
-        return isPresent() ? mapper.apply(get()) : defaultValue;
+        return isPresent() ? requireNonNull(mapper).apply(get()) : requireNonNull(defaultValue);
     }
 
     /**
@@ -525,6 +548,7 @@ public sealed interface Opt<T> {
      *
      * @param consumer    the action to be performed if a value is present
      * @param alternative the runnable to run if no value is present
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     void ifPresentOrElse(Consumer<? super T> consumer, Runnable alternative);
@@ -539,12 +563,13 @@ public sealed interface Opt<T> {
      * @param none a supplier t o invoke if no value is present
      * @param <R>  the type of the result
      * @return the result of applying {@code some} or {@code none}
+     * @throws NullPointerException if input is null
      * @since 1.1
      */
     default <R> R match(Function<? super T, ? extends R> some, Supplier<? extends R> none) {
         return switch (this) {
-            case Some<T> s -> some.apply(s.value());
-            case None<T> n -> none.get();
+            case Some<T> s -> requireNonNull(some).apply(s.value());
+            case None<T> n -> requireNonNull(none).get();
         };
     }
 
@@ -567,7 +592,7 @@ public sealed interface Opt<T> {
 
         @Override
         public <R> R accept(OptVisitor<T, R> visitor) {
-            return visitor.visit(this);
+            return requireNonNull(visitor).visit(this);
         }
 
         @Override
@@ -602,17 +627,17 @@ public sealed interface Opt<T> {
 
         @Override
         public <U> Opt<U> map(Function<? super T, ? extends U> mapper) {
-            return Opt.ofNullable(mapper.apply(value));
+            return Opt.ofNullable(requireNonNull(mapper).apply(value));
         }
 
         @Override
         public <U> Opt<U> flatMap(Function<? super T, Opt<U>> mapper) {
-            return mapper.apply(value);
+            return requireNonNull(mapper).apply(value);
         }
 
         @Override
         public Opt<T> filter(Predicate<? super T> predicate) {
-            return predicate.test(value) ? this : Opt.none();
+            return requireNonNull(predicate).test(value) ? this : Opt.none();
         }
 
         @Override
@@ -622,12 +647,12 @@ public sealed interface Opt<T> {
 
         @Override
         public void ifPresent(Consumer<? super T> consumer) {
-            consumer.accept(value);
+            requireNonNull(consumer).accept(value);
         }
 
         @Override
         public void ifPresentOrElse(Consumer<? super T> consumer, Runnable alternative) {
-            consumer.accept(value);
+            requireNonNull(consumer).accept(value);
         }
 
         @Override
@@ -652,7 +677,7 @@ public sealed interface Opt<T> {
 
         @Override
         public <R> R accept(OptVisitor<T, R> visitor) {
-            return visitor.visit(this);
+            return requireNonNull(visitor).visit(this);
         }
 
         @Override
@@ -677,12 +702,12 @@ public sealed interface Opt<T> {
 
         @Override
         public T orElseGet(Supplier<? extends T> supplier) {
-            return supplier.get();
+            return requireNonNull(supplier).get();
         }
 
         @Override
         public <X extends Throwable> T orElseThrow(Supplier<? extends X> exceptionSupplier) throws X {
-            throw exceptionSupplier.get();
+            throw requireNonNull(exceptionSupplier).get();
         }
 
         @Override
@@ -712,7 +737,7 @@ public sealed interface Opt<T> {
 
         @Override
         public void ifPresentOrElse(Consumer<? super T> consumer, Runnable alternative) {
-            alternative.run();
+            requireNonNull(alternative).run();
         }
 
         @Override
