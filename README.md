@@ -25,6 +25,7 @@
 Opt<String> someValue = Opt.of("Hello, World!");
 Opt<String> noneValue = Opt.none();
 Opt<Integer> lazyValue = Opt.lazy(() -> expensiveComputation());
+Opt<Integer> emptyValue = Opt.ofNullable(null); // Opt.None<Integer>
 ```
 
 ### Basic Operations
@@ -65,9 +66,7 @@ OptVisitor<Integer, String> visitor = new OptVisitor<>() {
 
 Opt<Integer> value = Opt.of(10);
 String message = value.accept(visitor);
-System.out.
-
-println(message); // Output: "Got a value: 10"
+System.out.println(message); // Output: "Got a value: 10"
 ```
 
 ### Lazy Evaluation
@@ -75,14 +74,10 @@ println(message); // Output: "Got a value: 10"
 ```java
 Opt<Integer> expensiveOpt = Opt.lazy(() -> expensiveComputation());
 
-System.out.
-
-println("Before get() call");
+System.out.println("Before get() call");
 
 int result = expensiveOpt.get(); // expensiveComputation() runs here
-System.out.
-
-println("After get() call");
+System.out.println("After get() call");
 ```
 
 ---
