@@ -80,9 +80,11 @@ public sealed interface Opt<T> {
      * @return an empty {@code Opt}
      * @since 1.1
      */
+    @SuppressWarnings("unchecked")
     static <T> Opt<T> none() {
-        return new None<>();
+        return (Opt<T>) None.INSTANCE;
     }
+
 
     /**
      * Sequences a stream of {@code Opt} objects into an {@code Opt} containing a stream of values.
@@ -93,7 +95,7 @@ public sealed interface Opt<T> {
      * @return an {@code Opt} containing a stream of values if all are present, otherwise empty
      * @since 1.1
      */
-    public static <T> Opt<Stream<T>> sequence(Stream<Opt<T>> opts) {
+    static <T> Opt<Stream<T>> sequence(Stream<Opt<T>> opts) {
         var list = opts.toList();
         return (list.stream().allMatch(Opt::isPresent)) ? Opt.of(list.stream().map(Opt::get)) : none();
     }
@@ -106,9 +108,10 @@ public sealed interface Opt<T> {
      * @return the flattened {@code Opt}
      * @since 1.1
      */
-    public static <T> Opt<T> flatten(Opt<Opt<T>> nested) {
+    static <T> Opt<T> flatten(Opt<Opt<T>> nested) {
         return nested.flatMap(Function.identity());
     }
+
 
     /**
      * Returns a sequential {@code Iterator} containing the value if present,
@@ -172,6 +175,93 @@ public sealed interface Opt<T> {
     }
 
     /**
+     * Converts this {@code Opt} to a {@code List}.
+     * If a value is present, returns a single-element list containing the value.
+     * Otherwise, returns an empty list.
+     *
+     * @return a list containing the value if present, otherwise an empty list.
+     * @since 1.1
+     */
+    default List<T> toList() {
+        return isPresent() ? List.of(get()) : List.of();
+    }
+
+    /**
+     * Converts this {@code Opt} to a {@code Set}.
+     * If a value is present, returns a single-element set containing the value.
+     * Otherwise, returns an empty set.
+     *
+     * @return a set containing the value if present, otherwise an empty set.
+     * @since 1.1
+     */
+    default Set<T> toSet() {
+        return isPresent() ? Set.of(get()) : Set.of();
+    }
+
+    /**
+     * Converts this {@code Opt} to a {@code Map} with a single key-value pair.
+     * If a value is present, applies the given key and value mapping functions to the value.
+     * Otherwise, returns an empty map.
+     *
+     * @param keyMapper   a function to generate a key from the value.
+     * @param valueMapper a function to generate a value from the value.
+     * @param <K>         the key type.
+     * @param <V>         the value type.
+     * @return a map containing a single entry if a value is present, otherwise an empty map.
+     * @throws NullPointerException if the mapping functions return {@code null}.
+     * @since 1.1
+     */
+    default <K, V> Map<K, V> toMap(Function<T, K> keyMapper, Function<T, V> valueMapper) {
+        return isPresent() ? Map.of(keyMapper.apply(get()), valueMapper.apply(get())) : Map.of();
+    }
+
+    /**
+     * Transforms this {@code Opt} using a provided function.
+     * The function receives this {@code Opt} as input and returns a new value.
+     *
+     * @param transformer the transformation function.
+     * @param <U>         the type of the transformed value.
+     * @return an {@code Opt} containing the transformed value, or an empty {@code Opt} if the transformation returns {@code null}.
+     * @throws NullPointerException if the transformer function is {@code null}.
+     * @since 1.1
+     */
+    default <U> Opt<U> transform(Function<? super Opt<T>, ? extends U> transformer) {
+        return Opt.ofNullable(transformer.apply(this));
+    }
+
+    /**
+     * If a value is present, applies the given function and returns this {@code Opt}.
+     * Otherwise, does nothing.
+     *
+     * @param action the action to apply if a value is present
+     * @return this {@code Opt}
+     * @since 1.3
+     */
+    default Opt<T> andThen(Consumer<? super T> action) {
+        if (isPresent()) {
+            action.accept(get());
+        }
+        return this;
+    }
+
+
+    /**
+     * Applies the given function if a value is present, otherwise applies the fallback function.
+     * This is similar to {@code flatMap()}, but it provides an alternative in case of {@code None}.
+     *
+     * @param mapper   the function to apply if a value is present.
+     * @param fallback the function to apply if no value is present.
+     * @param <U>      the type of the result.
+     * @return the result of applying either the mapper function or the fallback function.
+     * @throws NullPointerException if either function is {@code null}.
+     * @since 1.1
+     */
+    default <U> Opt<U> flatMapOrElse(Function<? super T, Opt<U>> mapper, Supplier<Opt<U>> fallback) {
+        return isPresent() ? mapper.apply(get()) : fallback.get();
+    }
+
+
+    /**
      * Returns a sequential {@code Stream} containing the value if present,
      * otherwise an empty {@code Stream}.
      *
@@ -225,19 +315,6 @@ public sealed interface Opt<T> {
      */
     T orElseGet(Supplier<? extends T> supplier);
 
-    /**
-     * Returns the contained value if present, otherwise throws a {@code NoSuchElementException}.
-     *
-     * @return the value if present
-     * @throws NoSuchElementException if no value is present
-     * @since 1.1
-     */
-    default T orElseThrow() {
-        if (isPresent()) {
-            return get();
-        }
-        throw new NoSuchElementException(NO_VALUE_PRESENT);
-    }
 
     /**
      * Returns the result of applying {@code mapper} to the contained value if present,
@@ -335,7 +412,7 @@ public sealed interface Opt<T> {
      * Returns {@code true} if the contained value is equal to {@code value}.
      *
      * @param value the value to compare with the contained value
-     * @return {@code true} if the contained value equals {@code value}, otherwise {@code false
+     * @return {@code true} if the contained value equals {@code value}, otherwise {@code false}
      * @since 1.1
      */
     default boolean contains(T value) {
@@ -386,18 +463,16 @@ public sealed interface Opt<T> {
     Opt<T> filter(Predicate<? super T> predicate);
 
     /**
-     * Performs the given action with the contained value if present,
-     * and returns this {@code Opt} unchanged.
+     * If a value is present and matches the predicate, return this {@code Opt}.
+     * Otherwise, return the alternative {@code Opt}.
      *
-     * @param action the action to be performed on the contained value
-     * @return this {@code Opt}
+     * @param predicate the predicate to test the value
+     * @param fallback  the alternative {@code Opt} if predicate fails
+     * @return this {@code Opt} if predicate passes, otherwise {@code fallback}
      * @since 1.1
      */
-    default Opt<T> peek(Consumer<? super T> action) {
-        if (isPresent()) {
-            action.accept(get());
-        }
-        return this;
+    default Opt<T> filterOrElse(Predicate<? super T> predicate, Supplier<Opt<T>> fallback) {
+        return isPresent() && predicate.test(get()) ? this : fallback.get();
     }
 
     /**
@@ -461,13 +536,16 @@ public sealed interface Opt<T> {
      * Executes {@code some} if a value is present, otherwise executes {@code none}.
      *
      * @param some a function to apply if a value is present
-     * @param none a supplier to invoke if no value is present
+     * @param none a supplier t o invoke if no value is present
      * @param <R>  the type of the result
      * @return the result of applying {@code some} or {@code none}
      * @since 1.1
      */
     default <R> R match(Function<? super T, ? extends R> some, Supplier<? extends R> none) {
-        return isPresent() ? some.apply(get()) : none.get();
+        return switch (this) {
+            case Some<T> s -> some.apply(s.value());
+            case None<T> n -> none.get();
+        };
     }
 
     /**
@@ -553,18 +631,6 @@ public sealed interface Opt<T> {
         }
 
         @Override
-        public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (!(obj instanceof Some<?> other)) return false;
-            return Objects.equals(value, other.value);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hashCode(value);
-        }
-
-        @Override
         public String toString() {
             return "Some(%s)".formatted(value);
         }
@@ -579,11 +645,9 @@ public sealed interface Opt<T> {
     record None<T>() implements Opt<T> {
         private static final None<?> INSTANCE = new None<>();
 
-
         @Override
-        @SuppressWarnings("unchecked")
         public Iterator<T> iterator() {
-            return (Iterator<T>) List.of().iterator();
+            return Collections.emptyIterator();
         }
 
         @Override
