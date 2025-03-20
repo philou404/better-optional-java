@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Java Version](https://img.shields.io/badge/Java-17%2B-blue.svg)](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html)
-[![Stars](https://img.shields.io/github/stars/supraerror/better-optional-java)](https://github.com/philou404/better-optional-java/stargazers)
+[![Stars](https://img.shields.io/github/stars/philou404/better-optional-java)](https://github.com/philou404/better-optional-java/stargazers)
 
 `Opt<T>` is an advanced functional alternative to `Optional<T>` in Java.
 
