@@ -10,7 +10,7 @@
 
 ## Features
 
-- **Sealed Hierarchy**: Prevents uncontrolled subclassing with `Some<T>`, `None<T>`, and `Lazy<T>`.
+- **Sealed Hierarchy**: Prevents uncontrolled subclassing with `Some<T>` and`None<T>`.
 - **Pattern Matching with Visitor**: Type-safe and extensible functional pattern matching.
 - **Monadic API**: Includes `map`, `flatMap`, `zip`, `fold`, `ap`, `filter`, and more.
 - **Functional Utilities**: Handy methods like `ifPresentOrElse`, `orElseThrow`, `toOptional`, `stream`, `flatten`, etc.
