@@ -8,10 +8,9 @@
 
 ## Features
 
-- **Sealed Hierarchy**: `Some<T>`, `None<T>`, and `Lazy<T>` for eager and lazy evaluation.
+- **Sealed Hierarchy**: `Some<T>`, `None<T>`.
 - **Visitor Pattern**: Type-safe and extensible functional pattern matching.
 - **Monadic API**: `map`, `flatMap`, `zip`, `fold`, `ap`, `filter`, etc.
-- **Lazy Evaluation**: `Opt.lazy(Supplier<T>)` computes the value only when needed.
 - **Functional Utilities**: `ifPresentOrElse`, `orElseThrow`, `toOptional`, `stream`, `flatten`, etc.
 - **Interoperability**: Converts to and from `Optional<T>`, supports Java Streams.
 
@@ -24,7 +23,6 @@
 ```java
 Opt<String> someValue = Opt.of("Hello, World!");
 Opt<String> noneValue = Opt.none();
-Opt<Integer> lazyValue = Opt.lazy(() -> expensiveComputation());
 Opt<Integer> emptyValue = Opt.ofNullable(null); // Opt.None<Integer>
 ```
 
@@ -33,8 +31,6 @@ Opt<Integer> emptyValue = Opt.ofNullable(null); // Opt.None<Integer>
 ```java
 String result = someValue.orElse("Default Value");  // "Hello, World!"
 String result2 = noneValue.orElse("Default Value"); // "Default Value"
-
-int computedValue = lazyValue.orElse(42); // Computation happens only here
 ```
 
 ### Functional Composition
@@ -69,22 +65,8 @@ String message = value.accept(visitor);
 System.out.println(message); // Output: "Got a value: 10"
 ```
 
-### Lazy Evaluation
-
-```java
-Opt<Integer> expensiveOpt = Opt.lazy(() -> expensiveComputation());
-
-System.out.println("Before get() call");
-
-int result = expensiveOpt.get(); // expensiveComputation() runs here
-System.out.println("After get() call");
-```
-
----
-
 ## Performance Considerations
 
-- `Lazy<T>` defers execution until required, reducing unnecessary computation.
 - `Opt<T>` avoids `null` checks and `try-catch` blocks, making code cleaner and safer.
 - Supports **stream processing** with `flatten()` and `sequence()`.
 
@@ -112,10 +94,3 @@ If you find this project useful, consider giving it a star to show your support!
 - I think I've implemented the maximum number of methods possible and the two values present in an optional monad. I've
   taken my inspiration mainly from rust for the base, but as we don't have the same enumeration as in rust. I've used a
   sealed abstract class to limit the possible types.
-
-
-- Why did i make this code?
-- I don't like the way null values are handled in java. Java's Optional class is fine, but I don't have access to all
-  the methods I'd like to use, and java's Optional class is final, so I can't improve it without having to redo
-  everything. The fact that the Optional class is final is logical so as not to break its behavior and I've done the
-  same thing, no need to tell me.
