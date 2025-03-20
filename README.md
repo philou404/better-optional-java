@@ -38,9 +38,7 @@ String result2 = noneValue.orElse("Default Value"); // "Default Value"
 ```java
 Opt<Integer> number = Opt.of(42);
 Opt<String> transformed = number.map(n -> "Number: " + n);
-transformed.
-
-ifPresent(System.out::println); // Output: "Number: 42"
+transformed.ifPresent(System.out::println); // Output: "Number: 42"
 
 Opt<Integer> filtered = number.filter(n -> n > 50); // None, since 42 is not > 50
 ```
@@ -67,7 +65,7 @@ System.out.println(message); // Output: "Got a value: 10"
 
 ## Pattern matching with `switch`
 
-```
+```java
 Opt<Integer> i = Opt.none();
 
 switch (i) {
@@ -109,4 +107,4 @@ If you find this project useful, consider giving it a star to show your support!
 - Why do I code with a sealed class ?
 - I think I've implemented the maximum number of methods possible and the two values present in an optional monad. I've
   taken my inspiration mainly from rust for the base, but as we don't have the same enumeration as in rust. I've used a
-  sealed abstract class to limit the possible types.
+  sealed interface to limit the possible types.
