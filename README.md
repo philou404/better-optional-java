@@ -12,7 +12,7 @@
 - **Visitor Pattern**: Type-safe and extensible functional pattern matching.
 - **Monadic API**: `map`, `flatMap`, `zip`, `fold`, `ap`, `filter`, etc.
 - **Functional Utilities**: `ifPresentOrElse`, `orElseThrow`, `toOptional`, `stream`, `flatten`, etc.
-- **Interoperability**: Converts to and from `Optional<T>`, supports Java Streams.
+- **Interoperability**: Converts to and from `Optional<T>`, supports Java Streams and Interator.
 
 ---
 
@@ -64,6 +64,22 @@ Opt<Integer> value = Opt.of(10);
 String message = value.accept(visitor);
 System.out.println(message); // Output: "Got a value: 10"
 ```
+
+## Pattern matching with `switch`
+
+```
+Opt<Integer> i = Opt.none();
+
+switch (i) {
+    case Opt.Some<Integer> x -> System.out.println(x);
+    case Opt.None<Integer> x -> System.out.println("None"); // Output : None
+}
+
+```
+
+---
+
+
 
 ## Performance Considerations
 
