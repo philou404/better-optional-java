@@ -4,17 +4,19 @@ import java.util.Optional;
 import java.util.function.*;
 import java.util.stream.Stream;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A container object which may or may not contain a non-null value.
  *
  * @param <T> the type of the value
  * @author <a href="https://github.com/philou404">philou404</a>
- * @version 1.0
+ * @version 1.1
  */
-public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
+public sealed interface Opt<T> {
 
-    private static final String THE_VALUE_CAN_T_BE_NULL = "The value can't be null";
-    private static final String NO_VALUE_PRESENT = "No value present";
+    String THE_VALUE_CAN_T_BE_NULL = "The value can't be null";
+    String NO_VALUE_PRESENT = "No value present";
 
     /**
      * Returns an {@code Opt} with the specified non-null value.
@@ -23,10 +25,10 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param <T>   the type of the value
      * @return an {@code Opt} with the value present
      * @throws NullPointerException if the value is null
-     * @since 1.0
+     * @since 1.1
      */
-    public static <T> Opt<T> of(T value) {
-        return new Some<>(Objects.requireNonNull(value, THE_VALUE_CAN_T_BE_NULL));
+    static <T> Opt<T> of(T value) {
+        return new Some<>(requireNonNull(value, THE_VALUE_CAN_T_BE_NULL));
     }
 
     /**
@@ -35,9 +37,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param opts a stream of {@code Opt} objects
      * @param <T>  the type of the values
      * @return a stream containing all the present values
-     * @since 1.0
+     * @since 1.1
      */
-    public static <T> Stream<T> flatten(Stream<Opt<T>> opts) {
+    static <T> Stream<T> flatten(Stream<Opt<T>> opts) {
         return opts.flatMap(Opt::stream);
     }
 
@@ -52,10 +54,10 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param <T>   the type of the value inside the {@code Optional}
      * @return an {@code Opt} containing the value if present, or {@code Opt.none()} if the {@code Optional} is empty
      * @throws NullPointerException if the {@code Optional} is null
-     * @since 1.0
+     * @since 1.1
      */
-    public static <T> Opt<T> of(Optional<T> value) {
-        return Objects.requireNonNull(value, THE_VALUE_CAN_T_BE_NULL)
+    static <T> Opt<T> of(Optional<T> value) {
+        return requireNonNull(value, THE_VALUE_CAN_T_BE_NULL)
                 .map(Opt::of)
                 .orElseGet(Opt::none);
     }
@@ -69,9 +71,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param <T>   the type of the value
      * @return an {@code Opt} with a present value if the specified value is non-null,
      * otherwise an empty {@code Opt}
-     * @since 1.0
+     * @since 1.1
      */
-    public static <T> Opt<T> ofNullable(T value) {
+    static <T> Opt<T> ofNullable(T value) {
         return (value == null) ? none() : new Some<>(value);
     }
 
@@ -80,24 +82,12 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      *
      * @param <T> the type of the non-existent value
      * @return an empty {@code Opt}
-     * @since 1.0
+     * @since 1.1
      */
-    @SuppressWarnings("unchecked")
-    public static <T> Opt<T> none() {
-        return (Opt<T>) None.INSTANCE;
+    static <T> Opt<T> none() {
+        return new None<>();
     }
 
-    /**
-     * Returns a lazy {@code Opt} where the value is computed only when needed.
-     *
-     * @param supplier the supplier of the value
-     * @param <T>      the type of the value
-     * @return an {@code Opt} that lazily computes its value
-     * @since 1.0
-     */
-    public static <T> Opt<T> lazy(Supplier<? extends T> supplier) {
-        return new Lazy<>(supplier);
-    }
 
     /**
      * Sequences a stream of {@code Opt} objects into an {@code Opt} containing a stream of values.
@@ -106,7 +96,7 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param opts a stream of {@code Opt} objects
      * @param <T>  the type of the values
      * @return an {@code Opt} containing a stream of values if all are present, otherwise empty
-     * @since 1.0
+     * @since 1.1
      */
     public static <T> Opt<Stream<T>> sequence(Stream<Opt<T>> opts) {
         var list = opts.toList();
@@ -119,7 +109,7 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param nested the nested {@code Opt}
      * @param <T>    the type of the inner value
      * @return the flattened {@code Opt}
-     * @since 1.0
+     * @since 1.1
      */
     public static <T> Opt<T> flatten(Opt<Opt<T>> nested) {
         return nested.flatMap(Function.identity());
@@ -131,9 +121,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param visitor the visitor instance
      * @param <R>     the type of the result produced by the visitor
      * @return the result produced by the visitor
-     * @since 1.0
+     * @since 1.1
      */
-    public abstract <R> R accept(OptVisitor<T, R> visitor);
+    <R> R accept(OptVisitor<T, R> visitor);
 
     /**
      * Applies the function contained in {@code optFn} to this value if both are present.
@@ -141,9 +131,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param optFn an {@code Opt} containing a function to apply
      * @param <U>   the type of the result after applying the function
      * @return an {@code Opt} containing the result, or empty if either is empty
-     * @since 1.0
+     * @since 1.1
      */
-    public <U> Opt<U> ap(Opt<Function<? super T, ? extends U>> optFn) {
+    default <U> Opt<U> ap(Opt<Function<? super T, ? extends U>> optFn) {
         return (this.isPresent() && optFn.isPresent()) ? Opt.ofNullable(optFn.get().apply(this.get())) : Opt.none();
     }
 
@@ -157,9 +147,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param <U>    the type of the other value
      * @param <R>    the type of the result
      * @return an {@code Opt} containing the combined result if both values are present, otherwise an empty {@code Opt}
-     * @since 1.0
+     * @since 1.1
      */
-    public <U, R> Opt<R> zip(Opt<U> other, BiFunction<? super T, ? super U, ? extends R> zipper) {
+    default <U, R> Opt<R> zip(Opt<U> other, BiFunction<? super T, ? super U, ? extends R> zipper) {
         return (this.isPresent() && other.isPresent()) ? Opt.ofNullable(zipper.apply(this.get(), other.get())) : Opt.none();
     }
 
@@ -168,9 +158,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      *
      * @param action the action to be executed if no value is present
      * @return this {@code Opt}
-     * @since 1.0
+     * @since 1.1
      */
-    public Opt<T> ifEmpty(Runnable action) {
+    default Opt<T> ifEmpty(Runnable action) {
         if (isEmpty()) {
             action.run();
         }
@@ -182,25 +172,25 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * otherwise an empty {@code Stream}.
      *
      * @return a {@code Stream} of the value, or empty if not present
-     * @since 1.0
+     * @since 1.1
      */
-    public abstract Stream<T> stream();
+    Stream<T> stream();
 
     /**
      * Returns {@code true} if there is a value present, otherwise {@code false}.
      *
      * @return {@code true} if a value is present, otherwise {@code false}
-     * @since 1.0
+     * @since 1.1
      */
-    public abstract boolean isPresent();
+    boolean isPresent();
 
     /**
      * Returns {@code true} if there is no value present.
      *
      * @return {@code true} if a value is not present, otherwise {@code false}
-     * @since 1.0
+     * @since 1.1
      */
-    public boolean isEmpty() {
+    default boolean isEmpty() {
         return !isPresent();
     }
 
@@ -209,36 +199,36 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      *
      * @return the non-null value held by this {@code Opt}
      * @throws NoSuchElementException if there is no value present
-     * @since 1.0
+     * @since 1.1
      */
-    public abstract T get();
+    T get();
 
     /**
      * Returns the value if present, otherwise returns {@code other}.
      *
      * @param other the value to be returned if there is no value present
      * @return the value, if present, otherwise {@code other}
-     * @since 1.0
+     * @since 1.1
      */
-    public abstract T orElse(T other);
+    T orElse(T other);
 
     /**
      * Returns the value if present, otherwise invokes {@code supplier} and returns the result.
      *
      * @param supplier the supplier whose result is returned if no value is present
      * @return the value if present, otherwise the result from {@code supplier}
-     * @since 1.0
+     * @since 1.1
      */
-    public abstract T orElseGet(Supplier<? extends T> supplier);
+    T orElseGet(Supplier<? extends T> supplier);
 
     /**
      * Returns the contained value if present, otherwise throws a {@code NoSuchElementException}.
      *
      * @return the value if present
      * @throws NoSuchElementException if no value is present
-     * @since 1.0
+     * @since 1.1
      */
-    public T orElseThrow() {
+    default T orElseThrow() {
         if (isPresent()) {
             return get();
         }
@@ -253,9 +243,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param mapper          the function to apply to the value if present
      * @param <U>             the type of the result
      * @return the mapped value if present, otherwise the default value
-     * @since 1.0
+     * @since 1.1
      */
-    public <U> U mapOrElse(Supplier<? extends U> defaultSupplier, Function<? super T, ? extends U> mapper) {
+    default <U> U mapOrElse(Supplier<? extends U> defaultSupplier, Function<? super T, ? extends U> mapper) {
         return isPresent() ? mapper.apply(get()) : defaultSupplier.get();
     }
 
@@ -265,9 +255,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param other the alternative {@code Opt} to return if this is present
      * @param <U>   the type of the value in the alternative {@code Opt}
      * @return {@code other} if a value is present, otherwise an empty {@code Opt}
-     * @since 1.0
+     * @since 1.1
      */
-    public <U> Opt<U> and(Opt<U> other) {
+    default <U> Opt<U> and(Opt<U> other) {
         return isPresent() ? other : Opt.none();
     }
 
@@ -278,9 +268,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      *
      * @param other the other {@code Opt} to compare with
      * @return the exclusive value between {@code this} and {@code other}, or empty if both are present or both are empty
-     * @since 1.0
+     * @since 1.1
      */
-    public Opt<T> xor(Opt<T> other) {
+    default Opt<T> xor(Opt<T> other) {
         if (isPresent() && other.isEmpty()) {
             return this;
         } else if (isEmpty() && other.isPresent()) {
@@ -294,9 +284,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * Returns the contained value if present, otherwise returns {@code null}.
      *
      * @return the value if present, otherwise {@code null}
-     * @since 1.0
+     * @since 1.1
      */
-    public T orNull() {
+    default T orNull() {
         return isPresent() ? get() : null;
     }
 
@@ -304,9 +294,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * Returns an {@code Optional} describing the value if present, otherwise an empty {@code Optional}.
      *
      * @return an {@code Optional} with a present value if this {@code Opt} is non-empty, otherwise an empty {@code Optional}
-     * @since 1.0
+     * @since 1.1
      */
-    public Optional<T> toOptional() {
+    default Optional<T> toOptional() {
         return isPresent() ? Optional.of(get()) : Optional.empty();
     }
 
@@ -315,9 +305,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      *
      * @param predicate the predicate to apply to the value
      * @return {@code true} if the value is present and matches the predicate, otherwise {@code false}
-     * @since 1.0
+     * @since 1.1
      */
-    public boolean exists(Predicate<? super T> predicate) {
+    default boolean exists(Predicate<? super T> predicate) {
         return isPresent() && predicate.test(get());
     }
 
@@ -328,9 +318,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param message the exception message to use if no value is present
      * @return the value if present
      * @throws NoSuchElementException if no value is present
-     * @since 1.0
+     * @since 1.1
      */
-    public T expect(String message) {
+    default T expect(String message) {
         if (isPresent()) {
             return get();
         }
@@ -342,9 +332,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      *
      * @param value the value to compare with the contained value
      * @return {@code true} if the contained value equals {@code value}, otherwise {@code false
-     * @since 1.0
+     * @since 1.1
      */
-    public boolean contains(T value) {
+    default boolean contains(T value) {
         return isPresent() && Objects.equals(get(), value);
     }
 
@@ -355,9 +345,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param <X>               the type of the exception to be thrown
      * @return the value if present
      * @throws X if no value is present
-     * @since 1.0
+     * @since 1.1
      */
-    public abstract <X extends Throwable> T orElseThrow(Supplier<? extends X> exceptionSupplier) throws X;
+    <X extends Throwable> T orElseThrow(Supplier<? extends X> exceptionSupplier) throws X;
 
     /**
      * Applies the provided {@code mapper} function to the contained value if present,
@@ -366,9 +356,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param mapper the function to apply to the value if present
      * @param <U>    the type of the result of the mapping
      * @return an {@code Opt} containing the result of applying the mapper, or an empty {@code Opt} if no value is present
-     * @since 1.0
+     * @since 1.1
      */
-    public abstract <U> Opt<U> map(Function<? super T, ? extends U> mapper);
+    <U> Opt<U> map(Function<? super T, ? extends U> mapper);
 
     /**
      * Applies the provided {@code mapper} function to the contained value if present,
@@ -377,9 +367,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param mapper the function to apply to the value if present
      * @param <U>    the type of the result
      * @return the result of applying the mapper, or an empty {@code Opt} if no value is present
-     * @since 1.0
+     * @since 1.1
      */
-    public abstract <U> Opt<U> flatMap(Function<? super T, Opt<U>> mapper);
+    <U> Opt<U> flatMap(Function<? super T, Opt<U>> mapper);
 
     /**
      * Returns an {@code Opt} describing the value if it matches the given predicate,
@@ -387,9 +377,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      *
      * @param predicate the predicate to apply to the value, if present
      * @return {@code this} if the value matches the predicate, otherwise an empty {@code Opt}
-     * @since 1.0
+     * @since 1.1
      */
-    public abstract Opt<T> filter(Predicate<? super T> predicate);
+    Opt<T> filter(Predicate<? super T> predicate);
 
     /**
      * Performs the given action with the contained value if present,
@@ -397,9 +387,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      *
      * @param action the action to be performed on the contained value
      * @return this {@code Opt}
-     * @since 1.0
+     * @since 1.1
      */
-    public Opt<T> peek(Consumer<? super T> action) {
+    default Opt<T> peek(Consumer<? super T> action) {
         if (isPresent()) {
             action.accept(get());
         }
@@ -412,9 +402,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param predicate the predicate to test the value against
      * @return this {@code Opt} if the value does not satisfy the predicate,
      * otherwise an empty {@code Opt}
-     * @since 1.0
+     * @since 1.1
      */
-    public Opt<T> filterNot(Predicate<? super T> predicate) {
+    default Opt<T> filterNot(Predicate<? super T> predicate) {
         return filter(predicate.negate());
     }
 
@@ -426,9 +416,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param mapper       the mapping function to apply to the value, if present
      * @param <U>          the type of the result
      * @return the result of the mapping function if a value is present, otherwise {@code defaultValue}
-     * @since 1.0
+     * @since 1.1
      */
-    public <U> U fold(U defaultValue, Function<? super T, ? extends U> mapper) {
+    default <U> U fold(U defaultValue, Function<? super T, ? extends U> mapper) {
         return isPresent() ? mapper.apply(get()) : defaultValue;
     }
 
@@ -437,18 +427,18 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      *
      * @param alternative the alternative {@code Opt} to return if no value is present
      * @return this {@code Opt} if a value is present, otherwise {@code alternative}
-     * @since 1.0
+     * @since 1.1
      */
-    public abstract Opt<T> or(Opt<T> alternative);
+    Opt<T> or(Opt<T> alternative);
 
     /**
      * If a value is present, performs the given action with the value,
      * otherwise does nothing.
      *
      * @param consumer the action to be performed, if a value is present
-     * @since 1.0
+     * @since 1.1
      */
-    public abstract void ifPresent(Consumer<? super T> consumer);
+    void ifPresent(Consumer<? super T> consumer);
 
     /**
      * If a value is present, performs the given action with the value,
@@ -456,9 +446,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      *
      * @param consumer    the action to be performed if a value is present
      * @param alternative the runnable to run if no value is present
-     * @since 1.0
+     * @since 1.1
      */
-    public abstract void ifPresentOrElse(Consumer<? super T> consumer, Runnable alternative);
+    void ifPresentOrElse(Consumer<? super T> consumer, Runnable alternative);
 
     // Inner classes
 
@@ -470,9 +460,9 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * @param none a supplier to invoke if no value is present
      * @param <R>  the type of the result
      * @return the result of applying {@code some} or {@code none}
-     * @since 1.0
+     * @since 1.1
      */
-    public <R> R match(Function<? super T, ? extends R> some, Supplier<? extends R> none) {
+    default <R> R match(Function<? super T, ? extends R> some, Supplier<? extends R> none) {
         return isPresent() ? some.apply(get()) : none.get();
     }
 
@@ -480,13 +470,12 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * Represents the presence of a value.
      *
      * @param <T> the type of the contained value
-     * @since 1.0
+     * @since 1.1
      */
-    public static final class Some<T> extends Opt<T> {
-        private final T value;
+    record Some<T>(T value) implements Opt<T> {
 
-        private Some(T value) {
-            this.value = value;
+        public Some(T value) {
+            this.value = requireNonNull(value, THE_VALUE_CAN_T_BE_NULL);
         }
 
         @Override
@@ -576,13 +565,11 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
      * Represents the absence of a value.
      *
      * @param <T> the type of the non-existent value
-     * @since 1.0
+     * @since 1.1
      */
-    public static final class None<T> extends Opt<T> {
+    record None<T>() implements Opt<T> {
         private static final None<?> INSTANCE = new None<>();
 
-        private None() {
-        }
 
         @Override
         public <R> R accept(OptVisitor<T, R> visitor) {
@@ -664,98 +651,4 @@ public sealed abstract class Opt<T> permits Opt.Some, Opt.None, Opt.Lazy {
             return "None";
         }
     }
-
-    /**
-     * A {@code Lazy} wrapper for an {@code Opt} that defers the evaluation of its value
-     * until it is accessed for the first time. This class extends {@code Opt} and provides
-     * a mechanism for lazily loading the contained value.
-     *
-     * <p> This is useful for situations where the value is expensive to compute or
-     * should only be computed under certain conditions.
-     *
-     * @param <T> the type of the value contained within the {@code Lazy}
-     * @since 1.0
-     */
-    public static final class Lazy<T> extends Opt<T> {
-        private final Supplier<? extends T> supplier;
-        private Opt<T> computed = null;
-
-        private Lazy(Supplier<? extends T> supplier) {
-            this.supplier = supplier;
-        }
-
-        private Opt<T> compute() {
-            if (computed == null) {
-                T value = supplier.get();
-                computed = (value == null) ? Opt.none() : Opt.of(value);
-            }
-            return computed;
-        }
-
-        @Override
-        public <R> R accept(OptVisitor<T, R> visitor) {
-            return compute().accept(visitor);
-        }
-
-        @Override
-        public Stream<T> stream() {
-            return compute().stream();
-        }
-
-        @Override
-        public boolean isPresent() {
-            return compute().isPresent();
-        }
-
-        @Override
-        public T get() {
-            return compute().get();
-        }
-
-        @Override
-        public T orElse(T other) {
-            return compute().orElse(other);
-        }
-
-        @Override
-        public T orElseGet(Supplier<? extends T> supplier) {
-            return compute().orElseGet(supplier);
-        }
-
-        @Override
-        public <X extends Throwable> T orElseThrow(Supplier<? extends X> exceptionSupplier) throws X {
-            return compute().orElseThrow(exceptionSupplier);
-        }
-
-        @Override
-        public <U> Opt<U> map(Function<? super T, ? extends U> mapper) {
-            return compute().map(mapper);
-        }
-
-        @Override
-        public <U> Opt<U> flatMap(Function<? super T, Opt<U>> mapper) {
-            return compute().flatMap(mapper);
-        }
-
-        @Override
-        public Opt<T> filter(Predicate<? super T> predicate) {
-            return compute().filter(predicate);
-        }
-
-        @Override
-        public Opt<T> or(Opt<T> alternative) {
-            return compute().or(alternative);
-        }
-
-        @Override
-        public void ifPresent(Consumer<? super T> consumer) {
-            compute().ifPresent(consumer);
-        }
-
-        @Override
-        public void ifPresentOrElse(Consumer<? super T> consumer, Runnable alternative) {
-            compute().ifPresentOrElse(consumer, alternative);
-        }
-    }
-
 }
