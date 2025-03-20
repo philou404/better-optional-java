@@ -12,7 +12,7 @@
 - **Visitor Pattern**: Type-safe and extensible functional pattern matching.
 - **Monadic API**: `map`, `flatMap`, `zip`, `fold`, `ap`, `filter`, etc.
 - **Functional Utilities**: `ifPresentOrElse`, `orElseThrow`, `toOptional`, `stream`, `flatten`, etc.
-- **Interoperability**: Converts to and from `Optional<T>`, supports Java Streams and Interator.
+- **Interoperability**: Converts to and from `Optional<T>`, supports Java Streams and Iterator.
 
 ---
 
